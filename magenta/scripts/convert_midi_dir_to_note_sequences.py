@@ -82,7 +82,7 @@ def convert_directory(root_dir, sub_dir, sequence_writer, recursive=False):
           tf.gfile.FastGFile(full_file_path).read())
     except midi_io.MIDIConversionError as e:
       tf.logging.warning(
-          'Could not parse sound file %s. It will be skipped. Error was: %s',
+          'Could not parse sound file %s. It will be deleted. Error was: %s',
           full_file_path, e)
       sequences_skipped += 1
       continue
