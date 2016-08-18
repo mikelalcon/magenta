@@ -39,6 +39,9 @@ tf.app.flags.DEFINE_string('output_file', None,
                            'if it already exists.')
 tf.app.flags.DEFINE_bool('recursive', False,
                          'Whether or not to recurse into subdirectories.')
+tf.app.flags.DEFINE_string('log', 'INFO',
+                           'The threshold for what messages will be logged '
+                           'DEBUG, INFO, WARN, ERROR, or FATAL.')
 
 
 def convert_directory(root_dir, sub_dir, sequence_writer, recursive=False):
@@ -74,10 +77,13 @@ def convert_directory(root_dir, sub_dir, sequence_writer, recursive=False):
       if recursive:
         recurse_sub_dirs.append(os.path.join(sub_dir, file_in_dir))
       continue
-    sequence = midi_io.midi_to_sequence_proto(
-        tf.gfile.FastGFile(full_file_path).read(),
-        continue_on_exception=True)
-    if sequence is None:
+    try:
+      sequence = midi_io.midi_to_sequence_proto(
+          tf.gfile.FastGFile(full_file_path).read())
+    except midi_io.MIDIConversionError as e:
+      tf.logging.warning(
+          'Could not parse MIDI file %s. It will be skipped. Error was: %s',
+          full_file_path, e)
       sequences_skipped += 1
       continue
     sequence.collection_name = os.path.basename(root_dir)
@@ -88,7 +94,7 @@ def convert_directory(root_dir, sub_dir, sequence_writer, recursive=False):
     sequences_written += 1
   tf.logging.info("Converted %d MIDI files in '%s'.", sequences_written,
                   dir_to_convert)
-  tf.logging.info("Coult not parse %d MIDI files.", sequences_skipped)
+  tf.logging.info('Could not parse %d MIDI files.', sequences_skipped)
   for recurse_sub_dir in recurse_sub_dirs:
     sequences_written += convert_directory(
         root_dir, recurse_sub_dir, sequence_writer, recursive)
@@ -96,11 +102,13 @@ def convert_directory(root_dir, sub_dir, sequence_writer, recursive=False):
 
 
 def main(unused_argv):
+  tf.logging.set_verbosity(FLAGS.log)
+
   if not FLAGS.midi_dir:
-    tf.logging.fatal("--midi_dir required")
+    tf.logging.fatal('--midi_dir required')
     return
   if not FLAGS.output_file:
-    tf.logging.fatal("--output_file required")
+    tf.logging.fatal('--output_file required')
     return
 
   FLAGS.midi_dir = os.path.expanduser(FLAGS.midi_dir)

@@ -28,6 +28,7 @@ TRANSPOSE_TO_KEY = 0  # C Major
 # in the note range.
 NUM_SPECIAL_INPUTS = 7
 NUM_SPECIAL_LABELS = 2
+NUM_BINARY_TIME_COUNTERS = 5
 
 
 class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
@@ -56,7 +57,7 @@ class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
     """Collapses a melody event value into a zero-based index range.
 
     Args:
-      melody_event: A Melody event value. -2 = no event,
+      melody_event: A MonophonicMelody event value. -2 = no event,
           -1 = note-off event, [0, 127] = note-on event for that midi pitch.
 
     Returns:
@@ -78,7 +79,7 @@ class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
           to the [self._min_note, self._max_note) range.
 
     Returns:
-      A Melody event value. -2 = no event, -1 = note-off event,
+      A MonophonicMelody event value. -2 = no event, -1 = note-off event,
       [0, 127] = note-on event for that midi pitch.
     """
     if model_event < NUM_SPECIAL_EVENTS:
@@ -105,7 +106,7 @@ class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
     120: The current step is repeating 2 bars ago.
 
     Args:
-      melody: A melodies_lib.Melody object.
+      melody: A melodies_lib.MonophonicMelody object.
 
     Returns:
       An input vector, an self.input_size length list of floats.
@@ -133,13 +134,10 @@ class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
     model_event = self.melody_event_to_model_event(melody_event)
     input_[2 * self.num_model_events + model_event] = 1.0
 
-    # Binary time counter.
-    i = len(melody) - 1
-    input_[3 * self.num_model_events + 0] = 1.0 if i % 2 else -1.0
-    input_[3 * self.num_model_events + 1] = 1.0 if i / 2 % 2 else -1.0
-    input_[3 * self.num_model_events + 2] = 1.0 if i / 4 % 2 else -1.0
-    input_[3 * self.num_model_events + 3] = 1.0 if i / 8 % 2 else -1.0
-    input_[3 * self.num_model_events + 4] = 1.0 if i / 16 % 2 else -1.0
+    # Binary time counter giving the metric location of the *next* note.
+    n = len(melody)
+    for i in range(NUM_BINARY_TIME_COUNTERS):
+      input_[3 * self.num_model_events + i] = 1.0 if (n / 2 ** i) % 2 else -1.0
 
     # Last event is repeating 1 bar ago.
     if (len(melody) >= STEPS_PER_BAR + 1 and
@@ -171,7 +169,7 @@ class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
       39: If the last event in the melody is repeating 2 bars ago.
 
     Args:
-      melody: A melodies_lib.Melody object.
+      melody: A melodies_lib.MonophonicMelody object.
 
     Returns:
       A label, an int.
@@ -198,10 +196,11 @@ class MelodyEncoderDecoder(melodies_lib.MelodyEncoderDecoder):
 
     Args:
       class_index: An int in the range [0, self.num_classes).
-      melody: The melodies_lib.Melody events list of the current melody.
+      melody: The melodies_lib.MonophonicMelody events list of the current
+          melody.
 
     Returns:
-      A melodies_lib.Melody event value.
+      A melodies_lib.MonophonicMelody event value.
     """
     # Repeat 1 bar ago.
     if class_index == self.num_model_events + 1:

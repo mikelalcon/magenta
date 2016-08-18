@@ -21,6 +21,9 @@ py_binary(
     name = "attention_rnn_create_dataset",
     srcs = ["attention_rnn_create_dataset.py"],
     srcs_version = "PY2AND3",
+    visibility = [
+        # internal pipeline runner
+    ],
     deps = [
         ":attention_rnn_encoder_decoder",
         "//magenta/models/shared:melody_rnn_create_dataset",
@@ -28,7 +31,7 @@ py_binary(
     ],
 )
 
-py_binary(
+py_library(
     name = "attention_rnn_encoder_decoder",
     srcs = ["attention_rnn_encoder_decoder.py"],
     srcs_version = "PY2AND3",
@@ -37,13 +40,25 @@ py_binary(
     ],
 )
 
+py_library(
+    name = "attention_rnn_generator",
+    srcs = ["attention_rnn_generator.py"],
+    srcs_version = "PY2AND3",
+    visibility = ["//magenta/interfaces:generator_interfaces"],
+    deps = [
+        ":attention_rnn_encoder_decoder",
+        ":attention_rnn_graph",
+        "//magenta/models/shared:melody_rnn_sequence_generator",
+        "//magenta/protobuf:generator_py_pb2",
+    ],
+)
+
 py_binary(
     name = "attention_rnn_generate",
     srcs = ["attention_rnn_generate.py"],
     srcs_version = "PY2AND3",
     deps = [
-        ":attention_rnn_encoder_decoder",
-        ":attention_rnn_graph",
+        ":attention_rnn_generator",
         "//magenta/models/shared:melody_rnn_generate",
         # tensorflow dep
     ],

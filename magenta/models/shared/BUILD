@@ -21,17 +21,35 @@ package(
 
 licenses(["notice"])  # Apache 2.0
 
-py_binary(
+py_library(
     name = "melody_rnn_create_dataset",
     srcs = ["melody_rnn_create_dataset.py"],
     srcs_version = "PY2AND3",
     deps = [
-        "//magenta/lib:sequence_to_melodies",
+        # tensorflow dep
+        "//magenta/lib:melodies_lib",
+        "//magenta/pipelines:dag_pipeline",
+        "//magenta/pipelines:pipeline",
+        "//magenta/pipelines:pipelines_common",
+        "//magenta/protobuf:music_py_pb2",
         # tensorflow dep
     ],
 )
 
-py_binary(
+py_test(
+    name = "melody_rnn_create_dataset_test",
+    srcs = ["melody_rnn_create_dataset_test.py"],
+    deps = [
+        ":melody_rnn_create_dataset",
+        "//magenta/lib:melodies_lib",
+        "//magenta/lib:testing_lib",
+        "//magenta/protobuf:music_py_pb2",
+        "//magenta/pipelines:pipelines_common",
+        # tensorflow dep
+    ],
+)
+
+py_library(
     name = "melody_rnn_generate",
     srcs = ["melody_rnn_generate.py"],
     srcs_version = "PY2AND3",
@@ -42,7 +60,20 @@ py_binary(
     ],
 )
 
-py_binary(
+py_library(
+    name = "melody_rnn_sequence_generator",
+    srcs = ["melody_rnn_sequence_generator.py"],
+    srcs_version = "PY2AND3",
+    deps = [
+        "//magenta/lib:melodies_lib",
+        "//magenta/lib:sequence_generator",
+        "//magenta/lib:sequences_lib",
+        "//magenta/protobuf:generator_py_pb2",
+        # tensorflow dep
+    ],
+)
+
+py_library(
     name = "melody_rnn_train",
     srcs = ["melody_rnn_train.py"],
     srcs_version = "PY2AND3",
